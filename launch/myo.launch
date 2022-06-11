@@ -1,0 +1,55 @@
+<launch>
+
+    <arg name="rviz" default="false" doc="whether to use rviz visualization or not"/>
+    <arg name="plot_raw_emg" default="true" doc="plot lower and upper raw EMG signals"/>
+    <arg name="myo_arm" default="right" doc="choose right or left arm"/>
+
+    <!-- configs for connecting myo and setting rviz -->
+    <rosparam param="num_myo">2</rosparam>
+
+    <group if="$(eval myo_arm == 'right')">
+        <!-- <rosparam param="myo_name">['right_upper_myo', 'right_lower_myo']</rosparam> -->
+        <node pkg="connect_myo" name="right_myo_raw" type="right_myo_raw" output="screen"/>
+    </group>
+    <group if="$(eval myo_arm == 'left')">
+        <!-- <rosparam param="myo_name">['left_upper_myo', 'left_lower_myo']</rosparam> -->
+        <node pkg="connect_myo" name="left_myo_raw" type="left_myo_raw" output="screen"/>
+    </group>
+
+    <group if="$(arg rviz)">
+        <node
+            name="rviz_myo"
+            pkg="rviz"
+            type="rviz"
+            args="-d $(find connect_myo)/config/rviz_display.rviz"> 
+        </node>
+    </group>
+    
+    <group if="$(arg plot_raw_emg)">
+        <node name="$(arg myo_arm)_lower_raw_emg"
+            pkg="rqt_plot"
+            type="rqt_plot"
+            args="/$(arg myo_arm)_lower_myo/myo_emg/data[0] 
+                /$(arg myo_arm)_lower_myo/myo_emg/data[1]
+                /$(arg myo_arm)_lower_myo/myo_emg/data[2]
+                /$(arg myo_arm)_lower_myo/myo_emg/data[3]
+                /$(arg myo_arm)_lower_myo/myo_emg/data[4]
+                /$(arg myo_arm)_lower_myo/myo_emg/data[5]
+                /$(arg myo_arm)_lower_myo/myo_emg/data[6]
+                /$(arg myo_arm)_lower_myo/myo_emg/data[7]"/>
+
+        <node name="$(arg myo_arm)_upper_raw_emg"
+            pkg="rqt_plot"
+            type="rqt_plot"
+            args="/$(arg myo_arm)_upper_myo/myo_emg/data[0] 
+                /$(arg myo_arm)_upper_myo/myo_emg/data[1]
+                /$(arg myo_arm)_upper_myo/myo_emg/data[2]
+                /$(arg myo_arm)_upper_myo/myo_emg/data[3]
+                /$(arg myo_arm)_upper_myo/myo_emg/data[4]
+                /$(arg myo_arm)_upper_myo/myo_emg/data[5]
+                /$(arg myo_arm)_upper_myo/myo_emg/data[6]
+                /$(arg myo_arm)_upper_myo/myo_emg/data[7]"/>
+
+    </group>
+
+</launch>

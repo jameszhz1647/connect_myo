@@ -1,0 +1,244 @@
+#!/usr/bin/env python3
+''' 
+This is a ROS adaption of https://github.com/francocruces/MioConnect 
+
+Connects to two myo armbands. While reading the bluetooth messages from myos, this node 
+is going to publish IMU, orientation, pose, EMG, and gestures information.
+
+PUBLISHERS: 
+  + myo_lower/myo_imu
+    myo_upper/myo_imu (Imu) ~ normalized IMU from myos
+  + myo_lower/myo_ori
+    myo_upper/myo_ori (Vector3) ~ normalized orientation of myo in radian euler format
+  + myo_lower/myo_ori_deg
+    myo_upper/myo_ori_deg (Vector3) ~ normalized orientation of myo in degree euler format
+  + myo_lower/pose
+    myo_upper/pose (PoseStamped) ~ normalized pose of myo; i.e. normalized orientation of myo 
+                                    in radian quaternion format
+  + myo_lower/myo_emg
+    myo_upper/myo_emg (Float32MultiArray) ~ raw EMG of myo
+  + myo_lower/myo_gest
+    myo_upper/myo_gest (Int16) ~ gesture index predicted by the defualt myo classifier
+
+PARAMETERS:
+  + myo_name (list of string) ~ determines which myo corresponds to which arm
+                            ['myo_lower', 'myo_upper'] means the first myo connected is placed on 
+                            lower arm and the second myo connected is placed on upper arm. Order
+                            of which myo serial detects first is random. 
+  + num_myo (integer) ~ numer of myo to connect 
+
+''' 
+
+import rospy
+from geometry_msgs.msg import Quaternion, Vector3, PoseStamped, Point, Pose
+from sensor_msgs.msg import Imu
+from std_msgs.msg import Header, Float32MultiArray, Int16
+import serial
+from math import sqrt, degrees
+from tf.transformations import euler_from_quaternion
+from connect_myo.myodriver import MyoDriver
+from connect_myo.config import Config
+
+
+class Handler:
+    def __init__(self):
+        """ Helper class for node myo_raw.
+        Use library connect_myo to connects to two myo armbands (one on lower arm and one
+        on upper arm). Then, listens to the bluetooth messages and publishes IMU, EMG, and 
+        orientation information. 
+        """
+        # myo params
+        self.config = Config()
+        self.num_myo = rospy.get_param('num_myo')
+        self.config.MYO_AMOUNT = self.num_myo
+        self.myo_driver = None
+        self.emg_val = None
+        self.imu_val = None
+        self.gest_val = None
+        self.last_emg = None
+        self.last_imu = None
+
+        # ROS Params
+        self.rate = rospy.Rate(20000) 
+        self.myo_name = rospy.get_param('myo_name')
+            
+        self.imuPub = [rospy.Publisher(f'{myo_name}/myo_imu', Imu, queue_size=1) for myo_name in self.myo_name]
+        self.oriPub = [rospy.Publisher(f'{myo_name}/myo_ori', Vector3, queue_size=1) for myo_name in self.myo_name]
+        self.oriDegPub = [rospy.Publisher(f'{myo_name}/myo_ori_deg', Vector3, queue_size=1) for myo_name in self.myo_name]
+        self.posePub = [rospy.Publisher(f'{myo_name}/pose', PoseStamped, queue_size=1) for myo_name in self.myo_name]
+        self.emgPub = [rospy.Publisher(f'{myo_name}/myo_emg', Float32MultiArray, queue_size=1) for myo_name in self.myo_name]
+        self.gestPub = [rospy.Publisher(f'{myo_name}/myo_gest', Int16, queue_size=1) for myo_name in self.myo_name]
+        
+        # self.imuPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_imu', Imu, queue_size=1),
+        #                rospy.Publisher(f'{self.myo_name[1]}/myo_imu', Imu, queue_size=1)]
+        # self.oriPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori', Vector3, queue_size=1),
+        #                rospy.Publisher(f'{self.myo_name[1]}/myo_ori', Vector3, queue_size=1)]
+        # self.oriDegPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori_deg', Vector3, queue_size=1),
+        #                   rospy.Publisher(f'{self.myo_name[1]}/myo_ori_deg', Vector3, queue_size=1)]
+        # self.posePub = [rospy.Publisher(f'{self.myo_name[0]}/pose', PoseStamped, queue_size=1),
+        #                 rospy.Publisher(f'{self.myo_name[1]}/pose', PoseStamped, queue_size=1)]
+        # self.emgPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_emg', Float32MultiArray, queue_size=1),
+        #                rospy.Publisher(f'{self.myo_name[1]}/myo_emg', Float32MultiArray, queue_size=1)]
+        # self.gestPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_gest', Int16, queue_size=1),
+        #                rospy.Publisher(f'{self.myo_name[1]}/myo_gest', Int16, queue_size=1)]
+        
+        # rospy.Timer(rospy.Duration(0.5), self.check_myo)  
+        rospy.Timer(rospy.Duration(1/50), self.handle_gest)
+
+        try:
+            # Init
+            self.myo_driver = MyoDriver(self.config)
+
+            # Connect
+            self.myo_driver.run()
+
+            if self.config.GET_MYO_INFO:
+                # Get info
+                self.myo_driver.get_info()
+
+            print("Ready for data.")
+            print()
+
+            # Receive and handle data
+            while not rospy.is_shutdown(): 
+                self.myo_driver.receive()
+                self.emg_val = self.myo_driver.get_emg()
+                self.imu_val = self.myo_driver.get_imu()
+                self.gest_val = self.myo_driver.get_gest()
+                self.pub_emg()
+                self.pub_imu()
+                self.rate.sleep()
+
+
+        except KeyboardInterrupt:
+            print("Interrupted.")
+
+        except serial.serialutil.SerialException:
+            print("ERROR: Couldn't open port. Please close MyoConnect and any program using this serial port.")
+
+        finally:
+            print("Disconnecting...")
+            if self.myo_driver is not None:
+                if self.config.DEEP_SLEEP_AT_KEYBOARD_INTERRUPT:
+                    self.myo_driver.deep_sleep_all()
+                else:
+                    self.myo_driver.disconnect_all()
+            print("Disconnected")
+
+    def pub_emg(self):
+        """ Publish raw EMG from both myo.
+        EMG is only published when the info changes.
+        """
+        if self.last_emg is None \
+            or not self.last_emg == self.emg_val:
+            self.last_emg = self.emg_val.copy()
+            # print(f"time = {rospy.get_time()} --- {self.emg_val} --- {self.last_emg}")
+            msg = Float32MultiArray()
+            msg.data = self.emg_val[0]
+            self.emgPub[0].publish(msg)
+            msg.data = self.emg_val[1]
+            self.emgPub[1].publish(msg)
+        
+    def pub_imu(self):
+        """ Publish IMU and orientation of both myo. 
+        Adapted from https://github.com/uts-magic-lab/ros_myo 
+        """
+        if self.last_imu is None \
+            or not self.last_imu == self.imu_val:
+            self.last_imu = self.imu_val.copy()
+            # print(f"time = {rospy.get_time()} --- {self.imu_val} --- {self.last_imu}")
+            for i in range(4):
+                current_imu_tuple = self.imu_val[i]
+                quat1 = current_imu_tuple[0]
+                quat = []
+                for q in quat1:
+                    quat.append(q*-1)
+                acc = current_imu_tuple[1]
+                gyro = current_imu_tuple[2]
+
+                h = Header()
+                h.stamp = rospy.Time.now()
+                # frame_id is node name without /
+                h.frame_id = rospy.get_name()[1:]
+                # We currently don't know the covariance of the sensors with each other
+                cov = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+                quat = Quaternion(quat1[0] / 16384.0,
+                                quat1[1] / 16384.0,
+                                quat1[2] / 16384.0,
+                                quat1[3] / 16384.0)
+                # Normalize the quaternion and accelerometer values
+                quatNorm = sqrt(quat.x * quat.x + quat.y *
+                                quat.y + quat.z * quat.z + quat.w * quat.w)
+                normQuat = Quaternion(quat.x / quatNorm,
+                                    quat.y / quatNorm,
+                                    quat.z / quatNorm,
+                                    quat.w / quatNorm)
+                normAcc = Vector3(acc[0] / 2048.0,
+                                acc[1] / 2048.0,
+                                acc[2] / 2048.0)
+                normGyro = Vector3(gyro[0] / 16.0, gyro[1] / 16.0, gyro[2] / 16.0)
+                imu = Imu(h, normQuat, cov, normGyro, cov, normAcc, cov)
+                roll, pitch, yaw = euler_from_quaternion([normQuat.x,
+                                                        normQuat.y,
+                                                        normQuat.z,
+                                                        normQuat.w])
+                self.imuPub[i].publish(imu)
+                self.oriPub[i].publish(Vector3(roll, pitch, yaw))
+                self.oriDegPub[i].publish(Vector3(degrees(roll), degrees(pitch), degrees(yaw)))
+                self.posePub[i].publish(PoseStamped(h,Pose(Point(0.0,0.0,0.0),normQuat)) )
+
+    # def check_myo(self, event):
+    #     """ Check whether rosparam /myo_name has changed.
+    #     If yes, then updates the current publisher lists to have myo messages be published under
+    #     the correct names.
+    #     """
+    #     if not self.myo_name == rospy.get_param('myo_name'):
+    #         print("Switch upper and lower arm")
+    #         self.myo_name = rospy.get_param('myo_name')
+    #         self.imuPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_imu', Imu, queue_size=1),
+    #                         rospy.Publisher(f'{self.myo_name[1]}/myo_imu', Imu, queue_size=1)]
+    #         self.oriPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori', Vector3, queue_size=1),
+    #                     rospy.Publisher(f'{self.myo_name[1]}/myo_ori', Vector3, queue_size=1)]
+    #         self.oriDegPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori_deg', Vector3, queue_size=1),
+    #                         rospy.Publisher(f'{self.myo_name[1]}/myo_ori_deg', Vector3, queue_size=1)]
+    #         self.posePub = [rospy.Publisher(f'{self.myo_name[0]}/pose', PoseStamped, queue_size=1),
+    #                         rospy.Publisher(f'{self.myo_name[1]}/pose', PoseStamped, queue_size=1)]
+    #         self.emgPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_emg', Float32MultiArray, queue_size=1),
+    #                     rospy.Publisher(f'{self.myo_name[1]}/myo_emg', Float32MultiArray, queue_size=1)]
+    #         self.gestPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_gest', Int16, queue_size=1),
+    #                     rospy.Publisher(f'{self.myo_name[1]}/myo_gest', Int16, queue_size=1)]
+
+    def handle_gest(self, event):
+        """ Publish gesture index predicted by the default myo classifier. 
+        Corresponding gestures are as follws:
+            REST = 0
+            FIST = 1
+            WAVE_IN = 2
+            WAVE_OUT = 3
+            FINGERS_SPREAD = 4
+            THUMB_TO_PINKY = 5
+            UNKNOWN = 255
+        
+        It seems like due to the configs of myo, only one myo is going to send out gesture prediction. 
+        If myo is not classifying on the correct arm, switch it to the lower arm. 
+        """
+        if self.gest_val is not None:
+            names = ['REST', 'FIST', 'WAVE_IN', 'WAVE_OUT', 'FINGERS_SPREAD', 'THUMB_TO_PINKY', 'UNKNOWN']
+            # print("gest = ", names[self.gest_val[1][1]])
+            msg = Int16()
+            msg.data = self.gest_val[1][1]  # myo bluetooth config for classifier is type, val, xdir, _, _, _
+            myo_idx = self.gest_val[0]
+            self.gestPub[myo_idx].publish(msg)
+
+
+def main():
+    """ The main() function. """
+    rospy.init_node('connect_myo')
+    handler = Handler()
+    rospy.spin()
+
+if __name__ == '__main__':
+    try:
+        main()
+    except rospy.ROSInterruptException:
+        pass
