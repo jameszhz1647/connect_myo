@@ -6,18 +6,14 @@
 2. in the second terminal: `roslaunch connect_myo myo.launch myo_arm:=right`
 
 The EMG data are published at Ros topics:
-
- 	`/left_upper_myo/myo_emg`
-
-​	`/left_lower_myo/myo_emg`
-
-​	`/right_lower_myo/myo_emg`
-
-​	`/right_upper_myo/myo_emg`
+	`/left_upper_myo/myo_emg`
+	`	/left_lower_myo/myo_emg`
+	`	/right_lower_myo/myo_emg`
+	`/right_upper_myo/myo_emg`
 
 The IMU data are published at Ros topics:
 
- 	`/left_upper_myo/myo_imu`
+​	`/left_upper_myo/myo_imu`
 
 ​	`/left_lower_myo/myo_imu`
 
