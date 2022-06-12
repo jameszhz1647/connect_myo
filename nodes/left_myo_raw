@@ -59,10 +59,9 @@ class Handler:
         self.last_imu = None
 
         # ROS Params
-        self.rate = rospy.Rate(1000) 
-        # self.myo_name = rospy.get_param('myo_name')
-        self.myo_name = ['left_upper_myo', 'left_lower_myo']
-        print(self.myo_name[0])
+        self.rate = rospy.Rate(20000) 
+        self.myo_name = rospy.get_param('left_myo_name')
+        # print(self.myo_name[0])
         
         self.imuPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_imu', Imu, queue_size=1),
                         rospy.Publisher(f'{self.myo_name[1]}/myo_imu', Imu, queue_size=1)]
@@ -78,7 +77,6 @@ class Handler:
                     rospy.Publisher(f'{self.myo_name[1]}/myo_gest', Int16, queue_size=1)]
         
         rospy.Timer(rospy.Duration(0.5), self.check_myo)  
-        rospy.Timer(rospy.Duration(1/50), self.handle_gest)
 
         try:
             # Init
@@ -98,18 +96,13 @@ class Handler:
             while not rospy.is_shutdown(): 
                 self.myo_driver.receive()
                 
-                # if self.myo_name[0] == 'right_upper_myo':
-                #     self.emg_val = self.myo_driver.get_right_emg()
-                #     self.imu_val = self.myo_driver.get_right_imu()
-                #     self.gest_val = self.myo_driver.get_right_gest()
-                if self.myo_name[0] == 'left_upper_myo':
-                    self.emg_val = self.myo_driver.get_left_emg()
-                    self.imu_val = self.myo_driver.get_left_imu()
-                    self.gest_val = self.myo_driver.get_left_gest()                    
-                
-                    self.pub_emg()
-                    self.pub_imu()
-                    self.rate.sleep()  
+                self.emg_val = self.myo_driver.get_left_emg()
+                self.imu_val = self.myo_driver.get_left_imu()
+                self.gest_val = self.myo_driver.get_left_gest()                    
+            
+                self.pub_emg()
+                self.pub_imu()
+                self.rate.sleep()  
                     
 
         except KeyboardInterrupt:
@@ -195,9 +188,9 @@ class Handler:
         If yes, then updates the current publisher lists to have myo messages be published under
         the correct names.
         """
-        if not self.myo_name == ['left_upper_myo', 'left_lower_myo']:
+        if not self.myo_name == rospy.get_param('left_myo_name'):
             print("Switch upper and lower arm")
-            self.myo_name = ['left_upper_myo', 'left_lower_myo']
+            self.myo_name = rospy.get_param('left_myo_name')
             self.imuPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_imu', Imu, queue_size=1),
                             rospy.Publisher(f'{self.myo_name[1]}/myo_imu', Imu, queue_size=1)]
             self.oriPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori', Vector3, queue_size=1),
@@ -210,28 +203,6 @@ class Handler:
                         rospy.Publisher(f'{self.myo_name[1]}/myo_emg', Float32MultiArray, queue_size=1)]
             self.gestPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_gest', Int16, queue_size=1),
                         rospy.Publisher(f'{self.myo_name[1]}/myo_gest', Int16, queue_size=1)]
-
-    def handle_gest(self, event):
-        """ Publish gesture index predicted by the default myo classifier. 
-        Corresponding gestures are as follws:
-            REST = 0
-            FIST = 1
-            WAVE_IN = 2
-            WAVE_OUT = 3
-            FINGERS_SPREAD = 4
-            THUMB_TO_PINKY = 5
-            UNKNOWN = 255
-        
-        It seems like due to the configs of myo, only one myo is going to send out gesture prediction. 
-        If myo is not classifying on the correct arm, switch it to the lower arm. 
-        """
-        if self.gest_val is not None:
-            names = ['REST', 'FIST', 'WAVE_IN', 'WAVE_OUT', 'FINGERS_SPREAD', 'THUMB_TO_PINKY', 'UNKNOWN']
-            print("gest = ", names[self.gest_val[1][1]])
-            msg = Int16()
-            msg.data = self.gest_val[1][1]  # myo bluetooth config for classifier is type, val, xdir, _, _, _
-            myo_idx = self.gest_val[0]
-            self.gestPub[myo_idx].publish(msg)
 
 
 def main():
