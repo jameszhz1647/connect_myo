@@ -90,6 +90,7 @@ class Handler:
                 self.myo_driver.get_info()
 
             print("Ready for data.")
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             print()
 
             # Receive and handle data

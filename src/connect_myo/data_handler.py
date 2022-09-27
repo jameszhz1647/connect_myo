@@ -36,9 +36,10 @@ class DataHandler:
         val2 = struct.unpack('<8b',  payload['value'][8:]) 
         
         if self.printEmg:
-            print("EMG", payload['connection'], payload['atthandle'], val)
+            print("EMG", payload['connection'], payload['atthandle'], val, val2)
 
-        self.two_emg[payload['connection']] = val    
+        self.two_emg[payload['connection']] = val   
+        self.two_emg[payload['connection']].extend(val2)
         
         return self.two_emg
 

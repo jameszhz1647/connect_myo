@@ -9,7 +9,7 @@ If myos are not paired with their topics, just reset the corresponding rosparams
 
 For left two myos: `rosparam set /left_myo_name "['left_lower_myo', 'left_upper_myo']"` 
 
-For right two myos:  `rosparam set /right_myo_name "['left_lower_myo', 'left_upper_myo']"` 
+For right two myos:  `rosparam set /right_myo_name "['right_lower_myo', 'right_upper_myo']"` 
 
 The EMG data are published at Ros topics:
 
@@ -32,4 +32,6 @@ The IMU data are published at Ros topics:
 ​	`/right_upper_myo/myo_imu`
 
 
+
+## Record EMG/IMU
 

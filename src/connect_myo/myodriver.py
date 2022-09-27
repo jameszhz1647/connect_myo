@@ -37,7 +37,7 @@ class MyoDriver:
         Main. Disconnects possible connections and starts as many connections as needed.
         """
         self.disconnect_all()
-        print("$$$$$$$$$$$$$")
+        print("############")
         print(self.bluetooth.serialport)
         while len(self.myos) < self.config.MYO_AMOUNT:
             print(
