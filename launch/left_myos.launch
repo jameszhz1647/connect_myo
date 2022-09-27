@@ -21,7 +21,15 @@
                 /left_upper_myo/myo_emg/data[4]
                 /left_upper_myo/myo_emg/data[5]
                 /left_upper_myo/myo_emg/data[6]
-                /left_upper_myo/myo_emg/data[7]"/>
+                /left_upper_myo/myo_emg/data[7]
+                /left_upper_myo/myo_emg/data[8] 
+                /left_upper_myo/myo_emg/data[9]
+                /left_upper_myo/myo_emg/data[10]
+                /left_upper_myo/myo_emg/data[11]
+                /left_upper_myo/myo_emg/data[12]
+                /left_upper_myo/myo_emg/data[13]
+                /left_upper_myo/myo_emg/data[14]
+                /left_upper_myo/myo_emg/data[15]"/>
 
         <node name="left_lower_raw_emg"
             pkg="rqt_plot"
@@ -33,7 +41,15 @@
                 /left_lower_myo/myo_emg/data[4]
                 /left_lower_myo/myo_emg/data[5]
                 /left_lower_myo/myo_emg/data[6]
-                /left_lower_myo/myo_emg/data[7]"/>
+                /left_lower_myo/myo_emg/data[7]
+                /left_lower_myo/myo_emg/data[8] 
+                /left_lower_myo/myo_emg/data[9]
+                /left_lower_myo/myo_emg/data[10]
+                /left_lower_myo/myo_emg/data[11]
+                /left_lower_myo/myo_emg/data[12]
+                /left_lower_myo/myo_emg/data[13]
+                /left_lower_myo/myo_emg/data[14]
+                /left_lower_myo/myo_emg/data[15]"/>
     </group>
 
     <group if="$(arg plot_linear_acc)">

@@ -37,9 +37,10 @@ class DataHandler:
         
         if self.printEmg:
             print("EMG", payload['connection'], payload['atthandle'], val, val2)
+            
+        vals = val + val2
 
-        self.two_emg[payload['connection']] = val   
-        self.two_emg[payload['connection']].extend(val2)
+        self.two_emg[payload['connection']] = vals
         
         return self.two_emg
 
