@@ -1,7 +1,7 @@
 <launch>
 
-    <arg name="plot_raw_emg" default="true" doc="plot lower and upper raw EMG signals"/>
-    <arg name="plot_linear_acc" default="false" doc="plot lower and upper linear acceleration"/>
+    <arg name="plot_raw_emg" default="false" doc="plot lower and upper raw EMG signals"/>
+    <arg name="plot_linear_acc" default="true" doc="plot lower and upper linear acceleration"/>
 
     <!-- configs for connecting myo and setting rviz -->
     <rosparam param="num_myo">2</rosparam>
