@@ -14,7 +14,9 @@ class Bluetooth:
     def __init__(self, message_delay):
         self.lib = BGLib()
         self.message_delay = message_delay
-        self.serial = serial.Serial(port=self._detect_port(), baudrate=9600, dsrdtr=1)
+        self.serial = serial.Serial(port=self._detect_port(), baudrate=115200, dsrdtr=1)
+        print("Baudrate!!!!")
+        print(self.serial.baudrate)
         self.serialport = comports()[0][0]
         
     @staticmethod

@@ -59,24 +59,27 @@ class Handler:
         self.last_imu = None
 
         # ROS Params
-        self.rate = rospy.Rate(20000) 
+        self.rate = rospy.Rate(50) 
         self.myo_name = rospy.get_param('right_myo_name')
         # print(self.myo_name[0])
         
-        self.imuPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_imu', Imu, queue_size=1),
-                        rospy.Publisher(f'{self.myo_name[1]}/myo_imu', Imu, queue_size=1)]
-        self.oriPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori', Vector3, queue_size=1),
-                    rospy.Publisher(f'{self.myo_name[1]}/myo_ori', Vector3, queue_size=1)]
-        self.oriDegPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori_deg', Vector3, queue_size=1),
-                        rospy.Publisher(f'{self.myo_name[1]}/myo_ori_deg', Vector3, queue_size=1)]
-        self.posePub = [rospy.Publisher(f'{self.myo_name[0]}/pose', PoseStamped, queue_size=1),
-                        rospy.Publisher(f'{self.myo_name[1]}/pose', PoseStamped, queue_size=1)]
         self.emgPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_emg', Float32MultiArray, queue_size=1),
-                    rospy.Publisher(f'{self.myo_name[1]}/myo_emg', Float32MultiArray, queue_size=1)]
-        self.gestPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_gest', Int16, queue_size=1),
-                    rospy.Publisher(f'{self.myo_name[1]}/myo_gest', Int16, queue_size=1)]
+                    rospy.Publisher(f'{self.myo_name[1]}/myo_emg', Float32MultiArray, queue_size=1)]        
+        # self.imuPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_imu', Imu, queue_size=1),
+        #                 rospy.Publisher(f'{self.myo_name[1]}/myo_imu', Imu, queue_size=1)]
         
-        rospy.Timer(rospy.Duration(0.5), self.check_myo)  
+        # self.oriPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori', Vector3, queue_size=1),
+        #             rospy.Publisher(f'{self.myo_name[1]}/myo_ori', Vector3, queue_size=1)]
+        # self.oriDegPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori_deg', Vector3, queue_size=1),
+        #                 rospy.Publisher(f'{self.myo_name[1]}/myo_ori_deg', Vector3, queue_size=1)]
+        # self.posePub = [rospy.Publisher(f'{self.myo_name[0]}/pose', PoseStamped, queue_size=1),
+        #                 rospy.Publisher(f'{self.myo_name[1]}/pose', PoseStamped, queue_size=1)]
+        # self.emgPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_emg', Float32MultiArray, queue_size=1),
+        #             rospy.Publisher(f'{self.myo_name[1]}/myo_emg', Float32MultiArray, queue_size=1)]
+        # self.gestPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_gest', Int16, queue_size=1),
+        #             rospy.Publisher(f'{self.myo_name[1]}/myo_gest', Int16, queue_size=1)]
+        
+        # rospy.Timer(rospy.Duration(0.5), self.check_myo)  
 
         try:
             # Init
@@ -97,11 +100,11 @@ class Handler:
                 self.myo_driver.receive()
                 
                 self.emg_val = self.myo_driver.get_right_emg()
-                self.imu_val = self.myo_driver.get_right_imu()
-                self.gest_val = self.myo_driver.get_right_gest()
+                # self.imu_val = self.myo_driver.get_right_imu()
+                # self.gest_val = self.myo_driver.get_right_gest()
             
                 self.pub_emg()
-                self.pub_imu()
+                # self.pub_imu()
                 self.rate.sleep()  
                 
 
@@ -125,14 +128,24 @@ class Handler:
         EMG is only published when the info changes.
         """
         if (self.last_emg is None \
-            or not self.last_emg == self.emg_val) and self.emg_val is not None:
+            or (not self.last_emg[0] == self.emg_val[0] and not self.last_emg[1] == self.emg_val[1])) \
+                and self.emg_val is not None:
+            print(f"time = {rospy.get_time()} --- {self.emg_val} --- {self.last_emg}")
             self.last_emg = self.emg_val.copy()
-            # print(f"time = {rospy.get_time()} --- {self.emg_val} --- {self.last_emg}")
             msg = Float32MultiArray()
             msg.data = self.emg_val[0]
             self.emgPub[0].publish(msg)
             msg.data = self.emg_val[1]
             self.emgPub[1].publish(msg)
+        # else:
+        #     print("false")
+        
+        # msg = Float32MultiArray()
+        # msg.data = self.emg_val[0]
+        # self.emgPub[0].publish(msg)
+        # msg.data = self.emg_val[1]
+        # self.emgPub[1].publish(msg)
+        # print(f"time = {rospy.get_time()} --- {self.emg_val}")
         
     def pub_imu(self):
         """ Publish IMU and orientation of both myo. 
@@ -191,18 +204,18 @@ class Handler:
         if not self.myo_name == rospy.get_param('right_myo_name'):
             print("Switch upper and lower arm")
             self.myo_name = rospy.get_param('right_myo_name')
+            self.emgPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_emg', Float32MultiArray, queue_size=1),
+                            rospy.Publisher(f'{self.myo_name[1]}/myo_emg', Float32MultiArray, queue_size=1)]
             self.imuPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_imu', Imu, queue_size=1),
                             rospy.Publisher(f'{self.myo_name[1]}/myo_imu', Imu, queue_size=1)]
-            self.oriPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori', Vector3, queue_size=1),
-                        rospy.Publisher(f'{self.myo_name[1]}/myo_ori', Vector3, queue_size=1)]
-            self.oriDegPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori_deg', Vector3, queue_size=1),
-                            rospy.Publisher(f'{self.myo_name[1]}/myo_ori_deg', Vector3, queue_size=1)]
-            self.posePub = [rospy.Publisher(f'{self.myo_name[0]}/pose', PoseStamped, queue_size=1),
-                            rospy.Publisher(f'{self.myo_name[1]}/pose', PoseStamped, queue_size=1)]
-            self.emgPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_emg', Float32MultiArray, queue_size=1),
-                        rospy.Publisher(f'{self.myo_name[1]}/myo_emg', Float32MultiArray, queue_size=1)]
-            self.gestPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_gest', Int16, queue_size=1),
-                        rospy.Publisher(f'{self.myo_name[1]}/myo_gest', Int16, queue_size=1)]
+            # self.oriPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori', Vector3, queue_size=1),
+            #             rospy.Publisher(f'{self.myo_name[1]}/myo_ori', Vector3, queue_size=1)]
+            # self.oriDegPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori_deg', Vector3, queue_size=1),
+            #                 rospy.Publisher(f'{self.myo_name[1]}/myo_ori_deg', Vector3, queue_size=1)]
+            # self.posePub = [rospy.Publisher(f'{self.myo_name[0]}/pose', PoseStamped, queue_size=1),
+            #                 rospy.Publisher(f'{self.myo_name[1]}/pose', PoseStamped, queue_size=1)]
+            # self.gestPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_gest', Int16, queue_size=1),
+            #             rospy.Publisher(f'{self.myo_name[1]}/myo_gest', Int16, queue_size=1)]
 
 
 def main():
