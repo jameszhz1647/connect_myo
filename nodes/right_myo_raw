@@ -59,7 +59,7 @@ class Handler:
         self.last_imu = None
 
         # ROS Params
-        self.rate = rospy.Rate(50) 
+        self.rate = rospy.Rate(20000) 
         self.myo_name = rospy.get_param('right_myo_name')
         # print(self.myo_name[0])
         

@@ -1,49 +1,29 @@
-# connect_myo
+# Debug EMG Data Transfer Rate
 
-**This is a ROS package to connect 4 Myos by launching 2 separate Ros nodes:**
+#### In Ros node: (adjust Ros rate)
 
-1. Plug the first dongle, type `roslaunch connect_myo left_myos.launch`in the first terminal.
-2. Plug the second dongle, type `roslaunch connect_myo right_myos.launch`in the second terminal.
+![emg_val](emg_val.png)
 
-**If myos are not paired with their topics, just reset the corresponding rosparams in the terminal:**
+In ros node, two myos will publish two EMG data together through serial port, but each EMG data will be published by separate Ros topic, the test is based on the individual of each EMG data.
 
-For left two myos: `rosparam set /left_myo_name "['left_lower_myo', 'left_upper_myo']"` 
+Set the condition for publish EMG data only when its value (getting from myo) changes:
 
-For right two myos:  `rosparam set /right_myo_name "['right_lower_myo', 'right_upper_myo']"` 
+```
+if (self.last_emg is None \ or 
+	(not self.last_emg[0] == self.emg_val[0] and 
+	not self.last_emg[1] == self.emg_val[1])) \
+	and self.emg_val is not None:
+```
 
-**The EMG data are published at Ros topics:**
+By then, only get EMG topic published by Ros node limited at **85 Hz** even set very high rate in ROS
 
-​	`/left_upper_myo/myo_emg`
+So narrow down the issue (EMG data not reaches 200Hz) to the Myo device driver end 
 
-​	`	/left_lower_myo/myo_emg`
+#### In Myo driver: (adjust baudrate)
 
-​	`	/right_lower_myo/myo_emg`
+the process how EMG data transfer from Myo device to PC:
 
-​	`/right_upper_myo/myo_emg`
+![myodriver](myodriver.png)
 
-**The IMU data are published at Ros topics:**
-
-​	`/left_upper_myo/myo_imu`
-
-​	`/left_lower_myo/myo_imu`
-
-​	`/right_lower_myo/myo_imu`
-
-​	`/right_upper_myo/myo_imu`
-
-
-
-## Record EMG/IMU
-
-**left arm:**
-
-`rosbag record -O [xxx.bag] /left_lower_myo/myo_emg /left_lower_myo/myo_imu /left_upper_myo/myo_emg /left_upper_myo/myo_imu`
-
-**right arm:**
-
-`rosbag record -O [xxx.bag] /right_lower_myo/myo_emg /right_lower_myo/myo_imu /right_upper_myo/myo_emg /right_upper_myo/myo_imu`
-
-**Convert bag to csv file:**
-
-`rosrun rosbag_to_csv rosbag_to_csv.py`
+##### Test serial port baudrate:
 
