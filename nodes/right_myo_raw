@@ -55,11 +55,12 @@ class Handler:
         self.emg_val = None
         self.imu_val = None
         self.gest_val = None
-        self.last_emg = None
+        self.last_emg_0 = None
+        self.last_emg_1 = None
         self.last_imu = None
 
         # ROS Params
-        self.rate = rospy.Rate(20000) 
+        self.rate = rospy.Rate(200) 
         self.myo_name = rospy.get_param('right_myo_name')
         # print(self.myo_name[0])
         
@@ -127,16 +128,22 @@ class Handler:
         """ Publish raw EMG from both myo.
         EMG is only published when the info changes.
         """
-        if (self.last_emg is None \
-            or (not self.last_emg[0] == self.emg_val[0] and not self.last_emg[1] == self.emg_val[1])) \
-                and self.emg_val is not None:
-            print(f"time = {rospy.get_time()} --- {self.emg_val} --- {self.last_emg}")
-            self.last_emg = self.emg_val.copy()
-            msg = Float32MultiArray()
+        msg = Float32MultiArray()
+        
+        if (self.last_emg_0 is None or not self.last_emg_0 == self.emg_val[0]) \
+                and self.emg_val[0] is not None:
+            print(f"0: time = {rospy.get_time()} --- {self.emg_val[0]} --- {self.last_emg_0}")
+            self.last_emg_0 = self.emg_val.copy()[0]
             msg.data = self.emg_val[0]
             self.emgPub[0].publish(msg)
+            
+        if (self.last_emg_1 is None or not self.last_emg_1 == self.emg_val[1]) \
+                and self.emg_val[1] is not None:
+            print(f"1: time = {rospy.get_time()} --- {self.emg_val[1]} --- {self.last_emg_1}")
+            self.last_emg_1 = self.emg_val.copy()[1]
             msg.data = self.emg_val[1]
             self.emgPub[1].publish(msg)
+            
         # else:
         #     print("false")
         

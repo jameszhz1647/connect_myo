@@ -33,13 +33,15 @@ The timer I set in order to measure the EMG data publish rate is inside the hand
 
 ​	For one Myo one Dongle: 130 Hz, baudrate will not affect
 
-​	For two Myo one Dongle: 260 Hz, baudrate will not affect
+​	For two Myo one Dongle: 260 Hz,    (Ros topic)  100Hz and 85Hz,   baudrate will not affect
 
 
 
 Discussion:
 
-1. in Ros node, is better to publish the EMG topic when the EMG data from two myos different or just one of them different?  even the rate pub by two myo at 2600 Hz does not match Ros pub rate at 85Hz
+1. in Ros node, is better to publish the EMG topic when the EMG data from two myos different or just one of them different?  
+   1. even the rate pub by two myo at 260 Hz does not match Ros pub rate at 85Hz
+   2. after decouple two topic: limited to 100Hz and 85Hz 
 2. Is it the right way to change the baudrate?
 3. it is a way to adjust the handler trigger freq or myo emg data pub freq?
 
