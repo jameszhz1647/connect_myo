@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
     rospy
     sensor_msgs
     std_msgs
+    message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -47,12 +48,13 @@ catkin_python_setup()
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+# Generate messages in the 'msg' folder
+add_message_files(
+  FILES
+  MyoArm.msg
+  EmgArray.msg
+)
+
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -69,10 +71,10 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -167,6 +169,7 @@ ${catkin_INCLUDE_DIRS}
 catkin_install_python(PROGRAMS
   nodes/right_myo_raw
   nodes/left_myo_raw
+  nodes/myo_node
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

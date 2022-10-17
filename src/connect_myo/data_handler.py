@@ -32,15 +32,18 @@ class DataHandler:
         :two_emg: two raw EMG lists in list. The first EMG list corresponds to 
                     myo (id=0) and the second list corresponds to myo (id=0)
         """
-        val = struct.unpack('<8b',  payload['value'][:8])
+        '''According to http://developerblog.myo.com/myocraft-emg-in-the-bluetooth-protocol/
+        each characteristic sends two secuential readings in each update,
+        so the received payload is split in two samples. According to the
+        Myo BLE specification, the data type of the EMG samples is int8_t.
+        '''
+        val1 = struct.unpack('<8b',  payload['value'][:8])
         val2 = struct.unpack('<8b',  payload['value'][8:]) 
         
         if self.printEmg:
-            print("EMG", payload['connection'], payload['atthandle'], val, val2)
+            print("EMG", payload['connection'], payload['atthandle'], val1, val2)
             
-        vals = val + val2
-
-        self.two_emg[payload['connection']] = vals
+        self.two_emg[payload['connection']] = val1
         
         return self.two_emg
 
