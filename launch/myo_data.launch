@@ -1,0 +1,7 @@
+<launch>
+
+    <!-- <rosparam param="target_pos">target_0</rosparam> -->
+    <node pkg="connect_myo" name="RU_myo_node" type="RU_myo_node" output="screen"/>
+    <node pkg="connect_myo" name="RL_myo_node" type="RL_myo_node" output="screen"/>
+
+</launch>

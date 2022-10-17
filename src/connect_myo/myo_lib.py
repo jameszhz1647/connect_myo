@@ -174,7 +174,7 @@ class BT(object):
 class MyoRaw(object):
     '''Implements the Myo-specific communication protocol.'''
 
-    def __init__(self, tty=None):
+    def __init__(self, tty=None, arm=None, addr=None):
         if tty is None:
             tty = self.detect_tty()
         if tty is None:
@@ -186,6 +186,8 @@ class MyoRaw(object):
         self.imu_handlers = []
         self.arm_handlers = []
         self.pose_handlers = []
+        self.arm = arm
+        self.addr = addr
 
     def detect_tty(self):
         for p in comports():
@@ -206,15 +208,18 @@ class MyoRaw(object):
         self.bt.disconnect(2)
 
         ## start scanning
-        print('scanning...')
+        print(self.arm, 'scanning...')
         self.bt.discover()
         while True:
             p = self.bt.recv_packet()
-            print('scan response:', p)
+            # print(self.arm, 'scan response:', p)
 
             if p.payload.endswith(b'\x06\x42\x48\x12\x4A\x7F\x2C\x48\x47\xB9\xDE\x04\xA9\x01\x00\x06\xD5'):
                 addr = list(multiord(p.payload[2:8]))
-                break
+                if self.addr == addr:
+                    print(self.arm, 'founded', p)
+                    break
+            
         self.bt.end_scan()
 
         ## connect and wait for status event
@@ -262,6 +267,8 @@ class MyoRaw(object):
         else:
             name = self.read_attr(0x03)
             print('device name: %s' % name.payload)
+            print('### Begin streaming data for' + self.arm)
+            print()
 
             ## enable IMU data
             self.write_attr(0x1d, b'\x01\x00')

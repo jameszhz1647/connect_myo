@@ -1,5 +1,0 @@
-<launch>
-
-   <node pkg="connect_myo" name="myo_node" type="myo_node" output="screen"/>
-
-</launch>
