@@ -1,5 +1,27 @@
 # Debug EMG Data Transfer Rate
 
+#### Problem solved (only one Myo tested):
+
+The solution code (add `myo_lib.py` and `common.py`) is adapted from `myo_raw` repo:https://github.com/dzhu/myo-raw. However, this version did not subscribe **4 EMG  characteristics**, so have to take care of them in handle_data():
+
+```
+# Read notification handles corresponding to the for EMG characteristics
+elif attr == 0x2b or attr == 0x2e or attr == 0x31 or attr == 0x34:
+     '''According to http://developerblog.myo.com/myocraft-emg-in-the-bluetooth-protocol/
+     each characteristic sends two secuential readings in each update,
+     so the received payload is split in two samples. According to the
+     Myo BLE specification, the data type of the EMG samples is int8_t.
+     '''
+     emg1 = struct.unpack('<8b', pay[:8])
+     emg2 = struct.unpack('<8b', pay[8:])
+     self.on_emg(emg1, 0)
+     self.on_emg(emg2, 0)
+```
+
+This also notified that the problem that our EMG data is not published at 200 Hz is because we have to split the received playload from each characteristic into two emg data and **publish them separately and sequentially in one handling!**
+
+
+
 #### In Ros node: (adjust Ros rate or baudrate)
 
 ![emg_val](emg_val.png)
