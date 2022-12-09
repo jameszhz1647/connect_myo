@@ -38,7 +38,12 @@ class DataHandler:
         if self.printEmg:
             print("EMG", payload['connection'], payload['atthandle'], val, val2)
             
-        vals = val + val2
+        #### The reason why the emg is not at 200 hz is 
+        # because it does not return value twice for single payload 
+        # (payload[:8] and payload[8:] should be return twice during one emg handler)
+        
+        vals = val + val2 ## combine val and val2 is wrong, 
+                    ## should return val and val2 separately in this one handler
 
         self.two_emg[payload['connection']] = vals
         

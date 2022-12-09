@@ -65,16 +65,8 @@ class Handler:
         
         self.imuPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_imu', Imu, queue_size=1),
                         rospy.Publisher(f'{self.myo_name[1]}/myo_imu', Imu, queue_size=1)]
-        self.oriPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori', Vector3, queue_size=1),
-                    rospy.Publisher(f'{self.myo_name[1]}/myo_ori', Vector3, queue_size=1)]
-        self.oriDegPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori_deg', Vector3, queue_size=1),
-                        rospy.Publisher(f'{self.myo_name[1]}/myo_ori_deg', Vector3, queue_size=1)]
-        self.posePub = [rospy.Publisher(f'{self.myo_name[0]}/pose', PoseStamped, queue_size=1),
-                        rospy.Publisher(f'{self.myo_name[1]}/pose', PoseStamped, queue_size=1)]
         self.emgPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_emg', Float32MultiArray, queue_size=1),
                     rospy.Publisher(f'{self.myo_name[1]}/myo_emg', Float32MultiArray, queue_size=1)]
-        self.gestPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_gest', Int16, queue_size=1),
-                    rospy.Publisher(f'{self.myo_name[1]}/myo_gest', Int16, queue_size=1)]
         
         rospy.Timer(rospy.Duration(0.5), self.check_myo)  
 
@@ -97,8 +89,7 @@ class Handler:
                 self.myo_driver.receive()
                 
                 self.emg_val = self.myo_driver.get_left_emg()
-                self.imu_val = self.myo_driver.get_left_imu()
-                self.gest_val = self.myo_driver.get_left_gest()                    
+                self.imu_val = self.myo_driver.get_left_imu()                
             
                 self.pub_emg()
                 self.pub_imu()
@@ -193,17 +184,8 @@ class Handler:
             self.myo_name = rospy.get_param('left_myo_name')
             self.imuPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_imu', Imu, queue_size=1),
                             rospy.Publisher(f'{self.myo_name[1]}/myo_imu', Imu, queue_size=1)]
-            self.oriPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori', Vector3, queue_size=1),
-                        rospy.Publisher(f'{self.myo_name[1]}/myo_ori', Vector3, queue_size=1)]
-            self.oriDegPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_ori_deg', Vector3, queue_size=1),
-                            rospy.Publisher(f'{self.myo_name[1]}/myo_ori_deg', Vector3, queue_size=1)]
-            self.posePub = [rospy.Publisher(f'{self.myo_name[0]}/pose', PoseStamped, queue_size=1),
-                            rospy.Publisher(f'{self.myo_name[1]}/pose', PoseStamped, queue_size=1)]
             self.emgPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_emg', Float32MultiArray, queue_size=1),
                         rospy.Publisher(f'{self.myo_name[1]}/myo_emg', Float32MultiArray, queue_size=1)]
-            self.gestPub = [rospy.Publisher(f'{self.myo_name[0]}/myo_gest', Int16, queue_size=1),
-                        rospy.Publisher(f'{self.myo_name[1]}/myo_gest', Int16, queue_size=1)]
-
 
 def main():
     """ The main() function. """
